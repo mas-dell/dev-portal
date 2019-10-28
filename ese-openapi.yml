@@ -1,0 +1,170 @@
+openapi: 3.0.2
+info:
+  title: Product to ESE API
+  description: ' Product to ESE API Reference'
+  version: 1.0.0
+externalDocs:
+  description: ESE Developer Portal
+  url: http://swagger.io
+tags:
+- name: Configuration
+  description: Configuration endpoints
+  externalDocs:
+    description: Find out more
+    url: http://ese.dell.com
+paths:
+  /config:
+    put:
+      tags:
+        - Configuration
+      summary: Update the ESE configuration
+      operationId: updateConfig
+      parameters:
+        - in: header
+          name: x-dell-auth-key
+          schema:
+            $ref: '#/components/headers/x-dell-auth-key'
+        - in: header
+          name: x-dell-api-version
+          schema:
+            $ref: '#/components/headers/x-dell-api-version'
+        - in: header
+          name: Content-Length
+          schema:
+            $ref: '#/components/headers/Content-Length'
+          required: true
+      requestBody:
+        description: The Configuration
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Configuration'
+        required: true
+      responses:
+        200:
+          description: Configuration Updated Successfuly
+          content: {}
+        400:
+          description: Bad Request
+          content: {}
+        403:
+          description: Unauthorized
+          content: {}
+        500:
+          description: Internal Error
+          content: {}
+    get:
+      tags:
+      - Configuration
+      summary: Retrieve the ESE Configuration
+      description: Multiple status values can be provided with comma separated strings
+      operationId: getConfig
+      parameters:
+        - in: header
+          name: x-dell-auth-key
+          schema:
+            $ref: '#/components/headers/x-dell-auth-key'
+        - in: header
+          name: x-dell-api-version
+          schema:
+            $ref: '#/components/headers/x-dell-api-version'
+        - in: header
+          name: key
+          description: Name of the specific configuration key to retrieve
+          schema:
+            type: string
+      responses:
+        200:
+          description: Successful Operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Configuration'
+        400:
+          description: The specified configuration key does not exist
+          content: {}
+        403:
+          description: Unauthorized
+          content: {}
+        500:
+          description: Internal Error
+          content: {}
+  /acquirekey:
+    post:
+      tags:
+        - Acquire Key
+      summary: Acquire a Gen4 Key
+      description:
+         Acquire a Gen 4 key from either a `Gen3 key` or an `Access Pin / Key` Pair.<br>
+         Due to the nature of the operation, this endpoint may take up to 90 seconds to complete.
+      operationId: acquireKey
+      parameters:
+        - in: header
+          name: x-dell-auth-key
+          schema:
+            $ref: '#/components/headers/x-dell-auth-key'
+        - in: header
+          name: x-dell-api-version
+          schema:
+            $ref: '#/components/headers/x-dell-api-version'
+        - in: header
+          name: Content-Length
+          schema:
+            $ref: '#/components/headers/Content-Length'
+      requestBody:
+        description: The Current Access Parameter Values
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcquireKeyParameter'
+            examples:
+              Access Key and Pin:
+                value:
+                  accesskey: <Access Key Value>
+                  pin: <Pin Value>
+              Gen3 Key:
+                value:
+                  gen3key: <Gen 3 Key>
+      responses:
+        200:
+          description: Configuration Updated Successfuly
+          content: {}
+        400:
+          description: Either `gen3Key` or `accessKey` and `pin` are required
+          content: {}
+        403:
+          description: Unauthorized
+          content: {}
+        500:
+          description: Internal Error
+          content: {}
+components:
+  schemas:
+    Configuration:
+      type: string
+      description: JSON Object representing the ESE configuration
+    AcquireKeyParameter:
+      type: object
+      properties:
+        accesskey:
+          type: string
+        pin:
+          type: string
+        gen3key:
+          type: string
+  headers:
+    x-dell-auth-key:
+        schema:
+          type: string
+        example: tmpKey4U
+        required: true
+    x-dell-api-version:
+        schema:
+          type: string
+        example: 1.0.0
+        required: true
+    Content-Length:
+        description: Length of the request body in bytes
+        schema:
+          type: string
+        required: true
