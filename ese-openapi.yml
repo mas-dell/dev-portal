@@ -9,30 +9,29 @@ externalDocs:
 tags:
 - name: Configuration
   description: Configuration endpoints
-  externalDocs:
-    description: Find out more
-    url: http://ese.dell.com
+- name: Acquire Key
+  description: Acquire Key endpoints
 paths:
   /config:
     put:
       tags:
-        - Configuration
+      - Configuration
       summary: Update the ESE configuration
       operationId: updateConfig
       parameters:
-        - in: header
-          name: x-dell-auth-key
-          schema:
-            $ref: '#/components/headers/x-dell-auth-key'
-        - in: header
-          name: x-dell-api-version
-          schema:
-            $ref: '#/components/headers/x-dell-api-version'
-        - in: header
-          name: Content-Length
-          schema:
-            $ref: '#/components/headers/Content-Length'
-          required: true
+      - in: header
+        name: x-dell-auth-key
+        schema:
+          $ref: '#/components/headers/x-dell-auth-key'
+      - in: header
+        name: x-dell-api-version
+        schema:
+          $ref: '#/components/headers/x-dell-api-version'
+      - in: header
+        name: Content-Length
+        schema:
+          $ref: '#/components/headers/Content-Length'
+        required: true
       requestBody:
         description: The Configuration
         content:
@@ -60,19 +59,19 @@ paths:
       description: Multiple status values can be provided with comma separated strings
       operationId: getConfig
       parameters:
-        - in: header
-          name: x-dell-auth-key
-          schema:
-            $ref: '#/components/headers/x-dell-auth-key'
-        - in: header
-          name: x-dell-api-version
-          schema:
-            $ref: '#/components/headers/x-dell-api-version'
-        - in: header
-          name: key
-          description: Name of the specific configuration key to retrieve
-          schema:
-            type: string
+      - in: header
+        name: x-dell-auth-key
+        schema:
+          $ref: '#/components/headers/x-dell-auth-key'
+      - in: header
+        name: x-dell-api-version
+        schema:
+          $ref: '#/components/headers/x-dell-api-version'
+      - in: header
+        name: key
+        description: Name of the specific configuration key to retrieve
+        schema:
+          type: string
       responses:
         200:
           description: Successful Operation
@@ -92,25 +91,33 @@ paths:
   /acquirekey:
     post:
       tags:
-        - Acquire Key
+      - Acquire Key
       summary: Acquire a Gen4 Key
-      description:
-         Acquire a Gen 4 key from either a `Gen3 key` or an `Access Pin / Key` Pair.<br>
-         Due to the nature of the operation, this endpoint may take up to 90 seconds to complete.
+      description: |
+        Acquire a Gen4 key from either a `Gen3 key` or an `Access Pin / Key` Pair.<br>
+        Due to the various interactions involved with eSRS, this operation may take up to 90 seconds to complete.<br>
+        ## Use Cases
+        **Gen3 to Gen4 Conversion**<br>
+        Field upgrade that converts an existing Gen3 key to Gen4 key. Handles both Gateway and Direct (eVE).<br>
+        The Gen3 key is invalidated with the first use of Gen4 key and not with the generation of Gen4 key.
+
+        **Gen4 Key Acquisition**<br>
+        Field upgrade for a system that does not have a Gen3 key to acquire a Gen4 key <br>
+        The Access key and pin are acquired by the customer from a portal
       operationId: acquireKey
       parameters:
-        - in: header
-          name: x-dell-auth-key
-          schema:
-            $ref: '#/components/headers/x-dell-auth-key'
-        - in: header
-          name: x-dell-api-version
-          schema:
-            $ref: '#/components/headers/x-dell-api-version'
-        - in: header
-          name: Content-Length
-          schema:
-            $ref: '#/components/headers/Content-Length'
+      - in: header
+        name: x-dell-auth-key
+        schema:
+          $ref: '#/components/headers/x-dell-auth-key'
+      - in: header
+        name: x-dell-api-version
+        schema:
+          $ref: '#/components/headers/x-dell-api-version'
+      - in: header
+        name: Content-Length
+        schema:
+          $ref: '#/components/headers/Content-Length'
       requestBody:
         description: The Current Access Parameter Values
         content:
@@ -124,13 +131,13 @@ paths:
                   pin: <Pin Value>
               Gen3 Key:
                 value:
-                  gen3key: <Gen 3 Key>
+                  gen3key: <Gen3 Key>
       responses:
         200:
           description: Configuration Updated Successfuly
           content: {}
         400:
-          description: Either `gen3Key` or `accessKey` and `pin` are required
+          description: Either `gen3key` or `accesskey` and `pin` are required
           content: {}
         403:
           description: Unauthorized
