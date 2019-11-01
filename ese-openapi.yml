@@ -208,6 +208,34 @@ paths:
         500:
           description: Internal Error
           content: {}
+  /qos:
+    get:
+      tags:
+      - Quality of Service
+      summary: Retrieve statistics related to Heartbeat Quality of Service
+      operationId: getHeartBeatQoS
+      parameters:
+      - in: header
+        name: x-dell-auth-key
+        schema:
+          $ref: '#/components/headers/x-dell-auth-key'
+      - in: header
+        name: x-dell-api-version
+        schema:
+          $ref: '#/components/headers/x-dell-api-version'
+      responses:
+        200:
+          description: Successful Operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QualityOfService'
+        403:
+          description: Unauthorized
+          content: {}
+        500:
+          description: Internal Error
+          content: {}
   /connectivity:
     get:
       tags:
@@ -350,6 +378,8 @@ components:
           type: string
         gen3key:
           type: string
+    QualityOfService:
+      type: string
     Status:
       description: Contains various information pertaining to the ESE Status
       type: object
