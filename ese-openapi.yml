@@ -18,6 +18,37 @@ paths:
       - Configuration
       summary: Update the ESE configuration
       operationId: updateConfig
+      description: |
+        Below are some payload examples that illustrate some common configuration changes.<br>
+        ### Update Serial Number and Model
+        ```
+        {
+          "productIdBlock": {
+            "identifiers": [
+              {
+              "idType": "serialNumber",
+              "value": "UNITY SERIAL NUMBER"
+              }
+            ],
+            "productModel": "UNITY"
+        }
+
+        ```
+        ### Set the Connectivity State
+        #### Enable Connectivity
+        ```
+        {
+          "connectionState": "enabled"
+        }
+
+        ```
+        #### Disable Connectivity
+        ```
+        {
+          "connectionState": "disabled"
+        }
+
+        ```
       parameters:
       - in: header
         name: x-dell-auth-key
@@ -33,7 +64,6 @@ paths:
           $ref: '#/components/headers/Content-Length'
         required: true
       requestBody:
-        description: The Configuration
         content:
           application/json:
             schema:
@@ -97,13 +127,23 @@ paths:
         Acquire a Gen4 key from either a `Gen3 key` or an `Access Pin / Key` Pair.<br>
         Due to the various interactions involved with eSRS, this operation may take up to 90 seconds to complete.<br>
         ## Use Cases
-        **Gen3 to Gen4 Conversion**<br>
-        Field upgrade that converts an existing Gen3 key to Gen4 key. Handles both Gateway and Direct (eVE).<br>
-        The Gen3 key is invalidated with the first use of Gen4 key and not with the generation of Gen4 key.
-
-        **Gen4 Key Acquisition**<br>
-        Field upgrade for a system that does not have a Gen3 key to acquire a Gen4 key <br>
-        The Access key and pin are acquired by the customer from a portal
+        ### Gen3 to Gen4 Conversion
+        Field upgrade that converts an existing Gen3 key to Gen4 key. Handles both Gateway and Direct. The Gen3 key is invalidated with the first use of Gen4 key and not with the generation of the Gen4 key.<br>
+        To convert a Gen3 key to a Gen4 key, use the following payload:
+        ```
+        { 
+           "gen3Key": "<existing valid Gen3 SRS Key>" 
+        }
+        ```
+        ### Gen4 Key Acquisition
+        Field upgrade for a system that does not have a Gen3 key to acquire a Gen4 key. The Access key and pin are acquired by the customer from a portal.<br>
+        To acquire a Gen3 key from an Access Key and Pin, use the following payload:
+        ```
+        {
+           "accessKey": "<access key from portal>",
+           "pin": "<customer pin>"
+        }
+        ```
       operationId: acquireKey
       parameters:
       - in: header
@@ -124,14 +164,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AcquireKeyParameter'
-            examples:
-              Access Key and Pin:
-                value:
-                  accesskey: <Access Key Value>
-                  pin: <Pin Value>
-              Gen3 Key:
-                value:
-                  gen3key: <Gen3 Key>
       responses:
         200:
           description: Configuration Updated Successfuly
@@ -145,11 +177,170 @@ paths:
         500:
           description: Internal Error
           content: {}
+  /status:
+    get:
+      tags:
+      - Status
+      summary: Retrieve the ESE Status
+      operationId: getStatus
+      parameters:
+      - in: header
+        name: x-dell-auth-key
+        schema:
+          $ref: '#/components/headers/x-dell-auth-key'
+      - in: header
+        name: x-dell-api-version
+        schema:
+          $ref: '#/components/headers/x-dell-api-version'
+      responses:
+        200:
+          description: Successful Operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        400:
+          description: Bad Request
+          content: {}
+        403:
+          description: Unauthorized
+          content: {}
+        500:
+          description: Internal Error
+          content: {}
+  /connectivity:
+    get:
+      tags:
+      - Test Connectivity
+      summary: Perform Connectivity Tests against all endpoints
+      description: Perform connectivity tests against all the endpoints defined in the configuration
+      operationId: getConnectivity
+      parameters:
+      - in: header
+        name: x-dell-auth-key
+        schema:
+          $ref: '#/components/headers/x-dell-auth-key'
+      - in: header
+        name: x-dell-api-version
+        schema:
+          $ref: '#/components/headers/x-dell-api-version'
+      responses:
+        200:
+          description: Successful Operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectivityStatuses'
+        403:
+          description: Unauthorized
+          content: {}
+        500:
+          description: Internal Error
+          content: {}
+    post:
+      tags:
+      - Test Connectivity
+      summary: Perform Connectivity Tests against a specific endpoint
+      description: |
+        Perform connectivity tests against the endpoint defined in the payload<br>
+        To perform SSL verification according to the configured endpoint setting of 'validateSsl', use the index to select the URI, and pass in the correct mode (gateway).
+      operationId: postConnectivity
+      parameters:
+      - in: header
+        name: x-dell-auth-key
+        schema:
+          $ref: '#/components/headers/x-dell-auth-key'
+      - in: header
+        name: x-dell-api-version
+        schema:
+          $ref: '#/components/headers/x-dell-api-version'
+      - in: header
+        name: Content-Length
+        schema:
+          $ref: '#/components/headers/Content-Length'
+      requestBody:
+        description: |
+          The connectivity test parameters.<br>
+          Examples:
+          ```
+          {
+            "mode": "gateway",
+            "uri": "https://some.backend.url"
+          }
+          ```
+          or
+          ```
+          {
+            "mode": "gateway",
+            "uri": 1
+          }
+          ```
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode:
+                  type: string
+                  description: |
+                    Valid values are:<br><br>
+                    **gateway** <br>
+                    Test a gateway endpoint. If the endpoint contains an integer, it is considered an offset into the array of configured gateways and that endpoint is used (gateways are configured using the ESE config api). Otherwise, the endpoint is considered to contain a valid http(s) endpoint.<br>
+                    <br>
+                    **direct**<br>
+                    Test a direct connect endpoint. If the endpoint contains an integer, it is considered an offset into the array of known direct endpoints and that endpoint is used (direct endpoints are preconfigured in ESE during manufacturing). Otherwise, the endpoint is considered to contain a valid http(s) endpoint.<br>
+                    <br>
+                    NOTE: both of the above modes can be used to test connectivity to a uri that is not in the config, or is not even an ESE url. Just enter the value in the "uri" field
+                uri:
+                  type: string
+                  description:  |
+                    Must be in one of the following formats:<br>
+
+                    **host:port**<br>
+                    This will test connectivity to the host and port combination. This is not a test of HTTP or HTTPS, but more akin to opening a socket. The host/port combination does not need to be a SRS endpoint, as this API can serve as a more general purpose test.<br>
+                    `host`: hostname or ip address<br>
+                    `port`: port number. This is required and is not optional. Not specifying it will result in a connection error.<br>
+
+                    **SCHEME://host[:port][/path]**<br>
+                    Tests connectivity and reports the HTTP status code. The URI does not need to be a SRS endpoint, as this API can serve as a more general purpose test.<br>
+                    `SCHEME`: HTTP or HTTPS.<br>
+                    HTTPS will perform certificate validation. Even if the URL matches a configured gateway endpoint, SSL validation is always performed.<br>
+                    `host`: hostname or ip address<br>
+                    `port`: optional port. Defaults will be used if not specified (80 for HTTP, 443 for HTTPS)<br>
+                    `path`: optional path to test.<br>
+
+
+                    **index** (number)<br>
+                    If using a number, the endpoint with that index will be used. Index must be a integer type, not a string representation of an integer (e.g.: "uri": 3 is valid but "uri": "3" is invalid)<br>
+                    `0` for first/primary endpoint (this is the one with the lowest value for priority)<br>
+                    `1` for second endpoint<br>
+                    ...<br>
+                    `-1` for last endpoint<br>
+                    `-2` for 2nd to last endpoint<br>
+                    Entries that map outside the list of endpoints will result in an error.<br>
+                    This will load settings related to the endpoint, including the `validateSsl` setting
+
+      responses:
+        200:
+          description: Successful Operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectivityStatuses'
+        400:
+          description: For mode `gateway` or `direct`, the `index` field is invalid
+          content: {}
+        403:
+          description: Unauthorized
+          content: {}
+        500:
+          description: Internal Error
+          content: {}
 components:
   schemas:
     Configuration:
       type: string
-      description: JSON Object representing the ESE configuration
+      description: The ESE Configuration
     AcquireKeyParameter:
       type: object
       properties:
@@ -159,6 +350,89 @@ components:
           type: string
         gen3key:
           type: string
+    Status:
+      description: Contains various information pertaining to the ESE Status
+      type: object
+      properties:
+        communicationEnabled:
+          type: string
+          description: Indicates whether the connection to the backend is enabled
+        eseVersion:
+          type: string
+          description: The version that ESE is currently running
+        primaryDirectEndpoint:
+          type: string
+          description: The primary direct endpoint
+        primaryGatewayEndpoint:
+          type: string
+          description: The primary gateway endpoint
+        connectionPreference:
+          type: string
+          description: The preferred connection type. Either `direct` or `gateway`
+        lastConnection:
+          type: string
+          description: The last successful connection with the backend
+        eseProcessInfo:
+          type: object
+          description: Info about the ESE process
+          properties:
+            timestamp:
+              type: string
+              description: ESE current time
+            pid:
+              type: string
+              description: ESE PID
+            memory:
+              type: string
+              description: Memory consumed by ESE
+            cpu_percent:
+              type: string
+              description: CPU Percentage consumed by ESE
+        initialized:
+          type: string
+          description: |
+            Indicates whether ESE has been initialised<br>
+            Set to `True` if the `productModel` and `serialNumber` configuration fields have been set and if the `apiKey` has been stored in the secure vault. Set to `False` otherwise.
+    ConnectivityStatus:
+      type: object
+      properties:
+        mode:
+          type: string
+          description: |
+            `gateway` if the endpoint is a gateway endpoint, `direct` if the endpoint is a direct endpoint
+        endpoint:
+          type: string
+          description: |
+            The endpoint uri
+        status:
+          type: string
+          description: |
+            Valid status values are:<br>
+            `success` - Connectivity test to the 'endpoint' succeeded<br>
+            `fail` - Connectivity test to the 'endpoint' failed. See status_detail for more information<br>
+            `disabled` - Connectivity is currently disabled within ESE<br>
+        httpstatus:
+          type: int
+          description: |
+            `null` when a scheme is not specified in the `endpoint` request field
+        message:
+          type: string
+          description: |
+            `null` when a scheme is not specified in the `endpoint` request field
+        status_detail:
+          type: string
+          description: |
+            Valid status detail values are:<br>
+            `Success`, `Failed`, `Disabled`, `TimedOut`, `ConnectionError`, `ProxyError` and `SSLError`. <br>
+            <br>
+            `SSLError` will be returned : <br>
+                - When specifying a gateway for the URI as SRS gateways use self signed certificates (which are not ignored during a connectivity test of a specific URL).<br>
+                - When specifying a direct endpoint as direct endpoints use mutual TLS client certificates (which are not sent during a connectivity test of a specific URL). <br>
+                - Even if you specify a URI contained in the list of endpoints.<br>
+    ConnectivityStatuses:
+      type: array
+      items:
+        $ref: '#/components/schemas/ConnectivityStatus'
   headers:
     x-dell-auth-key:
         schema:
